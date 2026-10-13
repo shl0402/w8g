@@ -1,0 +1,32 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.ruff_cache/
+node_modules/
+data/
+route_checker/places.json
+public/assets/hk-map.json
+tests/screenshots/
+.DS_Store
+
+# Local Xcode state and generated artifacts
+DerivedData/
+build/
+**/xcuserdata/
+*.xcuserstate
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.log
+*.jar
+
+# Local learning material and generated reports (not application source)
+guides/
+learning-assets/
+**/*_STEP.html
+**/*BEGINNER_GUIDE*
+docs/OPERATOR_TIMING_RESULTS.md
+docs/INDOOR_VALIDATION.md

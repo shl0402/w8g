@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Rebuild a surface-timing candidate in the standalone w8g server, fully offline.
+
+No running server is started/stopped; no active routing files are overwritten.
+The bundled base already contains the independently reproducible indoor update.
+"""
+import argparse
+from datetime import date, timedelta
+from transit_enrichment import identity, official, history, holidays, published, kmb_pairs
+from transit_enrichment.merge import compile_base, compile_timing
+from transit_enrichment.check import verify
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import surface_timing
+import operator_sources
+import operator_timing
+from check_surface_feed import check
+
+
+def build(root, refresh=False):
+	base = root / 'data/surface-source/hk-transit-INDOOR.gtfs.zip'
+	proof = json.loads((base.parent / 'manifest.json').read_text())
+	if surface_timing.sha(base) != proof['sha256']:
+		raise ValueError('Bundled pre-surface GTFS does not match manifest')
+	surface_timing.fetch(root, offline=not refresh, refresh=refresh)
+	operator_sources.fetch(root, offline=not refresh, refresh=refresh)
+	for module in (identity, official, history, holidays, published, kmb_pairs):
+		module.fetch(root, offline=not refresh, refresh=refresh)
+	kmb_pairs.fetch(root, offline=not refresh, refresh=refresh)
+	work = root / 'data/surface-rebuild'
+	shutil.copytree(root / 'data/surface/raw', work / 'data/surface/raw', dirs_exist_ok=True)
+	shutil.copytree(root / 'data/operators/raw', work / 'data/operators/raw', dirs_exist_ok=True)
+	shutil.copytree(root / 'data/transit_enrichment/raw', work / 'data/transit_enrichment/raw', dirs_exist_ok=True)
+	shutil.copytree(root / 'data/transit_enrichment/kmb_pairs', work / 'data/transit_enrichment/kmb_pairs', dirs_exist_ok=True)
+	gen = work / 'data/generated'
+	gen.mkdir(parents=True, exist_ok=True)
+	feed = gen / 'hk-transit-EXPERIMENTAL.gtfs.zip'
+	surface_feed = gen / 'hk-transit-SURFACE.gtfs.zip'
+	config = json.loads((root / 'data/generated/otp-smoke/build-config.json').read_text())
+	start = date.fromisoformat(config['transitServiceStart'])
+	end = date.fromisoformat(config['transitServiceEnd']) - timedelta(days=1)
+	enriched_base = gen / 'hk-transit-ENRICHED-BASE.gtfs.zip'
+	enriched = gen / 'hk-transit-ENRICHED.gtfs.zip'
+	compile_base(work, base, enriched_base, start, end)
+	surface_timing.merge(work, enriched_base, surface_feed)
+	check(enriched_base, surface_feed)
+	compile_timing(work, enriched_base, surface_feed, enriched)
+	verify(enriched_base, surface_feed, enriched, work / 'data/transit_enrichment/validation.json')
+	kmb_feed = gen / 'hk-transit-KMB.gtfs.zip'
+	kmb_pairs.apply(work, enriched, kmb_feed)
+	operator_timing.merge(work, kmb_feed, feed)
+	validator = root / 'tools/gtfs-validator-8.0.1-cli.jar'
+	with (gen / 'validator.log').open('w') as log:
+		subprocess.run(['java', '-Xmx3G', '-jar', str(validator), '-i', str(feed),
+			'-o', str(gen / 'validator'), '-c', 'HK', '-t', '2', '-svu'], stdout=log, stderr=subprocess.STDOUT, check=True)
+	validation = json.loads((gen / 'validator/report.json').read_text())
+	if any(n['severity'] == 'ERROR' for n in validation['notices']):
+		raise ValueError('GTFS validation errors; active files unchanged')
+	if json.loads((gen / 'validator/system_errors.json').read_text()).get('notices'):
+		raise ValueError('Validator system errors; active files unchanged')
+	graph = gen / 'otp-smoke'
+	graph.mkdir(exist_ok=True)
+	shutil.copy2(feed, graph / 'hk.gtfs.zip')
+	for name in ('hong-kong.osm.pbf', 'build-config.json', 'router-config.json'):
+		shutil.copy2(root / 'data/generated/otp-smoke' / name, graph / name)
+	jar = root / 'data/user_inputs/otp/otp-shaded-2.9.0.jar'
+	with (gen / 'otp-build.log').open('w') as log:
+		subprocess.run(['java', '-Xmx8G', '-jar', str(jar), '--build', '--save', str(graph)],
+			stdout=log, stderr=subprocess.STDOUT, check=True)
+	surface_timing.save(gen / 'candidate-manifest.json', dict(base_sha256=proof['sha256'],
+		gtfs_sha256=surface_timing.sha(feed), graph_sha256=surface_timing.sha(graph / 'graph.obj'),
+		validation_errors=0, surface_report_sha256=surface_timing.sha(work / 'data/surface/report.json')))
+	print('Validated candidate:', work)
+	print('Active server unchanged. Run route regressions before installation.')
+
+
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(description=__doc__)
+	parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
+	parser.add_argument('--refresh', action='store_true')
+	args = parser.parse_args()
+	build(args.root.resolve(), args.refresh)

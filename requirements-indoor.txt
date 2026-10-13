@@ -1,0 +1,5 @@
+requests==2.34.2
+pyogrio==0.13.0
+pyproj==3.8.0
+shapely==2.1.2
+beautifulsoup4==4.15.0
