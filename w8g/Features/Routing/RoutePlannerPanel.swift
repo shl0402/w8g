@@ -76,9 +76,9 @@ struct RoutePlannerControls: View {
                     .accessibilityHint("The server may continue calculating. You can resume checking later.")
                 }.padding(.vertical, 4)
             } else if planner.canResume {
-                Text("The server may still be calculating. Resume checks the same request.")
+                Text(planner.usesDirectAPIs ? "Retry this route search." : "The server may still be calculating. Resume checks the same request.")
                     .font(.caption).foregroundStyle(AppTheme.secondaryText)
-                Button("Resume route search") { planner.resume() }.buttonStyle(RoutePrimaryButtonStyle())
+                Button(planner.usesDirectAPIs ? "Retry search" : "Resume route search") { planner.resume() }.buttonStyle(RoutePrimaryButtonStyle())
                 Button("Edit / start a new search") { planner.edit() }.font(.caption).padding(.vertical, 6)
             } else {
                 Button(planButtonTitle ?? (planner.isMultiStop ? "Plan all stops" : "Find route")) { if let planAction { planAction() } else { planner.plan(current: currentCoordinate()) } }
@@ -332,16 +332,16 @@ private struct RouteSettingsView: View {
                     Text("Scroll to choose a date, hour and minute in Hong Kong time. Leave now uses the time you press Find route.")
                         .font(.footnote)
                 case .transport:
-                    ForEach(RouteTransport.allCases) { mode in
+                    ForEach(planner.availableTransports) { mode in
                         Toggle(
-                            mode.title,
+                            planner.usesDirectAPIs && mode == .tram ? "Tram / Light Rail" : mode.title,
                             isOn: Binding(
                                 get: { planner.modes.contains(mode) },
                                 set: { planner.setTransport(mode, enabled: $0) }
                             ))
                     }
                     Text(
-                        "Walking is always allowed. Turn all transport off for a walking route. Bus and minibus share one server filter."
+                        planner.usesDirectAPIs ? "Google Maps uses transport preferences. Turn all transport off for a walking route." : "Walking is always allowed. Turn all transport off for a walking route. Bus and minibus share one server filter."
                     ).font(.footnote)
                 case .stay:
                     StayTimePicker(minutes: Binding(

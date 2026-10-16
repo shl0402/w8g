@@ -10,6 +10,38 @@ import Security
 
 enum GeminiKeyStore {
     static func load(accountID: String) throws -> String? {
+        if let key = try loadValue(slot: "device.gemini") { return key }
+        guard !UserDefaults.standard.bool(forKey: "w8g.gemini.sharedKeyRemoved") else { return nil }
+        let legacySlot = try loadValue(slot: accountID) != nil ? accountID : soleLegacySlot()
+        if let legacySlot, let old = try loadValue(slot: legacySlot) {
+            try saveValue(old, slot: "device.gemini")
+            try removeValue(slot: legacySlot)
+            return old
+        }
+        return nil
+    }
+    static func save(_ value: String, accountID: String) throws {
+        try saveValue(value, slot: "device.gemini")
+        UserDefaults.standard.set(false, forKey: "w8g.gemini.sharedKeyRemoved")
+    }
+    private static func soleLegacySlot() -> String? {
+        var query = baseQuery(accountID: "")
+        query.removeValue(forKey: kSecAttrAccount as String)
+        query[kSecReturnAttributes as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitAll
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let items = result as? [[String: Any]] else { return nil }
+        let slots = items.compactMap { $0[kSecAttrAccount as String] as? String }.filter { !$0.hasPrefix("device.") }
+        // Multiple old accounts need an explicit signed-in owner; never pick another account arbitrarily.
+        return slots.count == 1 ? slots[0] : nil
+    }
+    static func remove(accountID: String) throws {
+        UserDefaults.standard.set(true, forKey: "w8g.gemini.sharedKeyRemoved")
+        try removeValue(slot: "device.gemini")
+        try removeValue(slot: accountID)
+    }
+    static func loadValue(slot accountID: String) throws -> String? {
         var query = baseQuery(accountID: accountID)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -33,7 +65,7 @@ enum GeminiKeyStore {
         return key
     }
 
-    static func save(_ value: String, accountID: String) throws {
+    static func saveValue(_ value: String, slot accountID: String) throws {
         let key = value.trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !key.isEmpty,
@@ -63,7 +95,7 @@ enum GeminiKeyStore {
         }
     }
 
-    static func remove(accountID: String) throws {
+    static func removeValue(slot accountID: String) throws {
         let status = SecItemDelete(
             baseQuery(accountID: accountID) as CFDictionary
         )
@@ -102,4 +134,11 @@ enum GeminiKeyStore {
             }
         }
     }
+}
+
+// Provider slots share device storage, not account credentials or database rows.
+enum DeviceAPIKeys {
+    static func google() throws -> String? { try GeminiKeyStore.loadValue(slot: "device.google") }
+    static func saveGoogle(_ key: String) throws { try GeminiKeyStore.saveValue(key, slot: "device.google") }
+    static func removeGoogle() throws { try GeminiKeyStore.removeValue(slot: "device.google") }
 }

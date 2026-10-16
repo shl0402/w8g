@@ -16,6 +16,11 @@ struct Place: Codable, Identifiable, Equatable {
     var nearby: String?
     var kind: String?
     var source: String?
+    var attributions: [Attribution]? = nil
+    struct Attribution: Codable, Equatable {
+        let provider: String
+        let uri: String?
+    }
 
     var id: String {
         String(format: "%.5f,%.5f", locale: Locale(identifier: "en_US_POSIX"), lat, lon)

@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 
 struct AIPlacePicker: View {
+    let direct: Bool
     let choose: (Place) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var query: String
@@ -16,14 +17,16 @@ struct AIPlacePicker: View {
     @State private var loading = false
     @State private var errorMessage: String?
 
-    init(query: String = "", choose: @escaping (Place) -> Void) {
+    init(query: String = "", direct: Bool = false, choose: @escaping (Place) -> Void) {
         _query = State(initialValue: query)
         self.choose = choose
+        self.direct = direct
     }
 
     var body: some View {
         NavigationStack {
             List {
+                if direct { GoogleAttributionView(places: results) }
                 if loading { ProgressView("Searching…") }
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 ForEach(results) { place in
@@ -52,7 +55,7 @@ struct AIPlacePicker: View {
                 loading = true
                 do {
                     try await Task.sleep(for: .milliseconds(300))
-                    let found = try await PlaceService().search(query)
+                    let found = try await (direct ? GooglePlacesService().search(query) : PlaceService().search(query))
                     try Task.checkCancellation()
                     results = found
                 } catch {

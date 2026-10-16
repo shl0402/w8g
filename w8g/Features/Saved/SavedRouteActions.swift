@@ -17,7 +17,7 @@ struct SaveJourneyButton: View {
     @State private var saveError: String?
 
     var body: some View {
-        if let owner = session.account?.id {
+        if let owner = session.account?.id, journey.source != "Google Maps" {
             let exists = saved.contains(journey, owner: owner)
             Button {
                 if saved.save(journey, owner: owner) {
@@ -210,4 +210,45 @@ struct SavedJourneyMapView: View {
         .buttonStyle(.plain)
     }
 
+}
+
+struct SavedJourneyOverview: View {
+    let route: SavedRoute
+    let online: Bool
+    let canRemove: Bool
+    let share: () -> Void
+    let remove: () -> Void
+    @Environment(OfflineMapStore.self) private var maps
+    @State private var openMap = false
+    @State private var missingMap = false
+    @State private var showDetails = false
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Button {
+                    if online || maps.covering(route.journey) != nil { openMap = true }
+                    else { missingMap = true }
+                } label: { SavedRoutePreview(route: route, online: online, allowsRetry: false).allowsHitTesting(false) }
+                    .buttonStyle(.plain).accessibilityLabel("Open saved journey map")
+                    .disabled(!online && !maps.loaded)
+                Text(route.journey.displayTitle).font(.headline)
+                JourneyFlowView(journey: route.journey)
+                JourneyTimingView(journey: route.journey)
+                HStack {
+                    Button(action: share) { Image(systemName: "square.and.arrow.up").frame(width: 44,height: 44) }.accessibilityLabel("Share")
+                    NavigationLink { OfflineMapsView(journey: route.journey) } label: { Image(systemName: "arrow.down.circle").frame(width: 44,height: 44) }.accessibilityLabel("Manage downloaded map")
+                    Spacer()
+                    Button(role: .destructive, action: remove) { Image(systemName: "trash").frame(width: 44,height: 44) }.disabled(!canRemove).accessibilityLabel("Remove")
+                }
+                Button("Journey details") { showDetails = true }.frame(minHeight: 44)
+            }.padding(16)
+        }
+        .navigationDestination(isPresented: $openMap) {
+            SavedJourneyMapView(route: route, online: online, canRemove: canRemove, share: share, remove: remove)
+        }
+        .sheet(isPresented: $showDetails) { RouteDetailView(journey: route.journey) }
+        .alert("Map not downloaded", isPresented: $missingMap) {
+            Button("OK", role: .cancel) { }
+        } message: { Text("Download the map for this journey while online. You can then view the route and your GPS location without Wi-Fi or mobile data.") }
+    }
 }

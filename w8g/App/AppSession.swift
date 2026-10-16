@@ -19,6 +19,17 @@ enum RecoveryStage: Equatable {
 @Observable
 @MainActor
 final class AppSession {
+    private(set) var isGuest = UserDefaults.standard.bool(forKey: "w8g.onlineGuest")
+    func enterGuest() {
+        guard account == nil else { return }
+        useManualSignIn()
+        isGuest = true
+        UserDefaults.standard.set(true, forKey: "w8g.onlineGuest")
+    }
+    func leaveGuest() {
+        isGuest = false
+        UserDefaults.standard.set(false, forKey: "w8g.onlineGuest")
+    }
     private(set) var account: Account?
     private(set) var isWorking = false
     private(set) var isRestoringSession = true
@@ -29,6 +40,7 @@ final class AppSession {
     @ObservationIgnored private var restoreAttempt = UUID()
 
     func restoreSession(force: Bool = false) async {
+        if isGuest { useManualSignIn(); return }
         guard !isWorking, account == nil, force || !hasAttemptedRestore else { return }
         restoreTask?.cancel()
         let attempt = UUID()

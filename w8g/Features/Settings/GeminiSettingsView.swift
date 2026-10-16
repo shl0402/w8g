@@ -99,7 +99,7 @@ struct GeminiSettingsView: View {
                 Text("Your Gemini key")
             } footer: {
                 Text(
-                    "Stored securely on this iPhone for your account. "
+                    "Stored securely on this iPhone, shared between signed-in and guest modes. "
                     + "Sent directly to Google for AI requests, never to the app server or account database."
                 )
             }

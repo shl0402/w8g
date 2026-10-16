@@ -9,11 +9,41 @@
 /* Begin PBXBuildFile section */
 		7E8583073067D63300948139 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7E8583063067D63300948139 /* Assets.xcassets */; };
 		7E858343306AD3CB00948139 /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = 7E858342306AD3CB00948139 /* MapLibre */; };
+		A10000000000000000000001 /* W8gWidgets.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* W8gWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A10000000000000000000003 /* w8g/Features/DirectServices/ArrivalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* w8g/Features/DirectServices/ArrivalService.swift */; };
+		A10000000000000000000005 /* w8g/Shared/Models/MTRLineStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* w8g/Shared/Models/MTRLineStyle.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000013 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7E8582F73067D63200948139 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000010;
+			remoteInfo = W8gWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A10000000000000000000011 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10000000000000000000001 /* W8gWidgets.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		7E8582FF3067D63200948139 /* w8g.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = w8g.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7E8583063067D63300948139 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000002 /* W8gWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = W8gWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000004 /* w8g/Features/DirectServices/ArrivalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = w8g/Features/DirectServices/ArrivalService.swift; sourceTree = SOURCE_ROOT; };
+		A10000000000000000000006 /* w8g/Shared/Models/MTRLineStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = w8g/Shared/Models/MTRLineStyle.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -35,6 +65,16 @@
 			path = w8g;
 			sourceTree = "<group>";
 		};
+		A10000000000000000000008 /* WidgetShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WidgetShared;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000009 /* W8gWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = W8gWidgets;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,6 +86,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000015 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -53,6 +100,10 @@
 			isa = PBXGroup;
 			children = (
 				7E8583013067D63200948139 /* w8g */,
+				A10000000000000000000008 /* WidgetShared */,
+				A10000000000000000000009 /* W8gWidgets */,
+				A10000000000000000000004 /* w8g/Features/DirectServices/ArrivalService.swift */,
+				A10000000000000000000006 /* w8g/Shared/Models/MTRLineStyle.swift */,
 				7E8583063067D63300948139 /* Assets.xcassets */,
 				7E8583003067D63200948139 /* Products */,
 			);
@@ -62,6 +113,7 @@
 			isa = PBXGroup;
 			children = (
 				7E8582FF3067D63200948139 /* w8g.app */,
+				A10000000000000000000002 /* W8gWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,13 +128,16 @@
 				7E8582FB3067D63200948139 /* Sources */,
 				7E8582FC3067D63200948139 /* Frameworks */,
 				7E8582FD3067D63200948139 /* Resources */,
+				A10000000000000000000011 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A10000000000000000000012 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				7E8583013067D63200948139 /* w8g */,
+				A10000000000000000000008 /* WidgetShared */,
 			);
 			name = w8g;
 			packageProductDependencies = (
@@ -91,6 +146,26 @@
 			productName = w8g;
 			productReference = 7E8582FF3067D63200948139 /* w8g.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A10000000000000000000010 /* W8gWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000016 /* Build configuration list for PBXNativeTarget "W8gWidgets" */;
+			buildPhases = (
+				A10000000000000000000014 /* Sources */,
+				A10000000000000000000015 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000008 /* WidgetShared */,
+				A10000000000000000000009 /* W8gWidgets */,
+			);
+			name = W8gWidgets;
+			productName = W8gWidgets;
+			productReference = A10000000000000000000002 /* W8gWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -125,6 +200,7 @@
 			projectRoot = "";
 			targets = (
 				7E8582FE3067D63200948139 /* w8g */,
+				A10000000000000000000010 /* W8gWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -148,7 +224,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000003 /* w8g/Features/DirectServices/ArrivalService.swift in Sources */,
+				A10000000000000000000005 /* w8g/Shared/Models/MTRLineStyle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000012 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000010 /* W8gWidgets */;
+			targetProxy = A10000000000000000000013 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7E8583083067D63300948139 /* Debug */ = {
@@ -277,6 +370,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = w8g/w8g.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WT4NYHBPD8;
@@ -313,6 +407,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = w8g/w8g.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WT4NYHBPD8;
@@ -344,6 +439,58 @@
 			};
 			name = Release;
 		};
+		A10000000000000000000017 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = W8gWidgets/W8gWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WT4NYHBPD8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = W8gWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "w8g Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pithon.w8g.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A10000000000000000000018 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = W8gWidgets/W8gWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WT4NYHBPD8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = W8gWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "w8g Widgets";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pithon.w8g.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -361,6 +508,15 @@
 			buildConfigurations = (
 				7E85830B3067D63300948139 /* Debug */,
 				7E85830C3067D63300948139 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000016 /* Build configuration list for PBXNativeTarget "W8gWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000017 /* Debug */,
+				A10000000000000000000018 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

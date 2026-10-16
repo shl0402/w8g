@@ -23,6 +23,25 @@ struct RecoveryRequest { let requestToken: String; let expiresAt: Double; let me
         while AuthService.pending.isEmpty { await Task.yield() }
     }
     @MainActor static func main() async {
+        let oldGuest = UserDefaults.standard.object(forKey: "w8g.onlineGuest")
+        UserDefaults.standard.removeObject(forKey: "w8g.onlineGuest")
+        defer {
+            if let oldGuest { UserDefaults.standard.set(oldGuest, forKey: "w8g.onlineGuest") }
+            else { UserDefaults.standard.removeObject(forKey: "w8g.onlineGuest") }
+        }
+        let guest = AppSession()
+        let restoring = Task { await guest.restoreSession() }
+        await waitForRequest()
+        guest.enterGuest()
+        AuthService.pending.removeFirst().resume(returning: Account(id: "stale"))
+        await restoring.value
+        assert(guest.isGuest && guest.account == nil && !guest.isRestoringSession)
+        let reopened = AppSession()
+        await reopened.restoreSession()
+        assert(reopened.isGuest && AuthService.pending.isEmpty && !reopened.isRestoringSession)
+        guest.leaveGuest()
+        print("PASS: guest persists without auth requests and ignores late account restoration")
+
         for fails in [false, true] {
             let session = AppSession()
             let restore = Task { await session.restoreSession() }

@@ -21,7 +21,7 @@ struct OfflineSavedView: View {
 	var body: some View {
 		ZStack {
 			if let route = opened {
-				SavedJourneyMapView(
+				SavedJourneyOverview(
 					route: route, online: online,
 					canRemove: !saved.isSyncing && saved.storageError == nil,
 					share: { sharing = route }, remove: { removing = route }

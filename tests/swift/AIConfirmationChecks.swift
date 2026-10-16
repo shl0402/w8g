@@ -24,7 +24,7 @@ struct GeminiOptions {}
     static var gps = false
     static var departure = ""
     static var arrival = ""
-    func reply(to text: String, history: [AIMessage], key: String, options: GeminiOptions) async throws -> AIProposal {
+    func reply(to text: String, history: [AIMessage], key: String, options: GeminiOptions, direct: Bool = false) async throws -> AIProposal {
         Self.receivedHistory = history
         Self.receivedText = text
         return AIProposal(reply: "Check these places", useCurrentLocation: Self.gps,
@@ -277,10 +277,45 @@ struct GeminiOptions {}
         assert(m.messages.count == 2 && m.messages[0].text == "Replacement question")
         assert(GeminiService.receivedText == "Replacement question" && GeminiService.receivedHistory.isEmpty)
         assert(m.input == "Unsent composer draft")
+        let direct = AIChatModel(direct: true)
+        let serverSearches = PlaceService.queries.count
+        let serverPosts = APIClient.shared.posts.count
+        GeminiService.gps = false
+        direct.input = "Plan three stops"
+        direct.send(key: "test-only", options: .init())
+        await settle { !direct.isSending }
+        assert(direct.stops.isEmpty && !direct.canReview)
+        assert(direct.messages.last?.text.contains("server mode") == true)
+        assert(PlaceService.queries.count == serverSearches && GooglePlacesService.queries.isEmpty)
+        GeminiService.gps = true
+        direct.input = "Go to HKU"
+        direct.send(key: "test-only", options: .init())
+        await settle { !direct.isSending }
+        assert(GooglePlacesService.queries == ["HKU"] && PlaceService.queries.count == serverSearches)
+        direct.resolveCurrentLocation(CLLocationCoordinate2D(latitude: 22.29, longitude: 114.16))
+        direct.confirmAndSearch()
+        await settle { !direct.planner.isWaiting }
+        assert(direct.planner.selectedRoute?.id == "direct-result")
+        assert(APIClient.shared.posts.count == serverPosts)
+        print("PASS: guest AI rejects multi-stop, uses Google place lookup and routing only, never calls w8g API")
         print("PASS: inline edit replaces turn, removes stale follow-ups/results, preserves identity and composer draft, rejects empty edit")
         print("PASS: separate edit draft, previous route retained, repeat edit, cancel, failed search retention, success adoption")
         print("PASS: inline review, explicit departure, estimated departure sent to API, arrival deadline preserved, missing/late departure blocked, manual departure override")
         print("PASS: top-ranked place preselection, manual changes, no-match handling, coverage validation, no automatic job submission")
         print("PASS: unresolved/duplicate validation, optional settings without requests, explicit confirmation, AI draft/job contract, double-tap guard, progress/results, multi-stop stays, edited transport, failure recovery, GPS two-point route")
     }
+}
+
+@MainActor struct GooglePlacesService {
+    static var queries: [String] = []
+    func search(_ name: String) async throws -> [Place] {
+        Self.queries.append(name)
+        return [Place(name: name, lat: 22.28, lon: 114.15)]
+    }
+}
+@MainActor final class GoogleRouteService: RouteServing {
+    let usesDirectAPIs = true
+    func status() async throws -> RoutingStatus { .init(ready: true, minDate: "2020-01-01T00:00:00Z", maxDate: "2040-01-01T00:00:00Z") }
+    func start(_ request: RouteRequest) async throws -> String { "direct-test" }
+    func job(_ id: String) async throws -> RouteJob { .init(id: id, state: "succeeded", progress: nil, error: nil, routes: [.init(id: "direct-result")]) }
 }

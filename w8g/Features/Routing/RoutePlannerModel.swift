@@ -132,7 +132,12 @@ final class RoutePlannerModel {
         }
     }
 
-    init(service: (any RouteServing)? = nil) { self.service = service ?? RouteService() }
+    var usesDirectAPIs: Bool { service.usesDirectAPIs }
+    var availableTransports: [RouteTransport] { usesDirectAPIs ? [.mtr, .bus, .tram] : RouteTransport.allCases }
+    init(service: (any RouteServing)? = nil) {
+        self.service = service ?? RouteService()
+        if self.service.usesDirectAPIs { modes = [.mtr, .bus, .tram] }
+    }
     var selectedRoute: Journey? { routes.first { $0.id == selectedID } }
     var departureTitle: String {
         leaveNow ? "Leave now" : JourneyTime.string(departure, format: "dd MMM HH:mm")
@@ -247,6 +252,7 @@ final class RoutePlannerModel {
         departure = date
     }
     func setTransport(_ mode: RouteTransport, enabled: Bool) {
+        guard !enabled || availableTransports.contains(mode) else { return }
         invalidate()
         if enabled { modes.insert(mode) } else { modes.remove(mode) }
     }

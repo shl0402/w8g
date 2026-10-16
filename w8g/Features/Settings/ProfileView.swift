@@ -21,26 +21,26 @@ struct ProfileView: View {
                     LabeledContent("Email", value: account.email)
                 }
 
-                Section("AI settings") {
-                    NavigationLink {
-                        GeminiSettingsView(accountID: account.id)
-                    } label: {
-                        Label("Gemini API key", systemImage: "sparkles")
-                    }
-                }
+            }
+            Section("Widgets") {
+                NavigationLink("Design your widgets") { WidgetSettingsView() }
+            }
+            Section("Services") {
+                NavigationLink("API keys and arrivals") { ServicesSettingsView(accountID: session.account?.id ?? "guest") }
             }
 
             Section {
                 Button(role: .destructive) {
                     Task {
-                        await session.signOut()
+                        if session.isGuest { session.leaveGuest(); dismiss() }
+                        else { await session.signOut() }
                     }
                 } label: {
                     HStack {
                         Text(
                             session.isWorking
                                 ? "Signing out…"
-                                : "Sign out"
+                                : (session.isGuest ? "Return to sign in" : "Sign out")
                         )
 
                         Spacer()

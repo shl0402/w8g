@@ -45,7 +45,7 @@ struct JourneyTimetableFooter: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 8) {
 			Divider()
-			Text("Timetable estimates, not live arrivals. Check service hours before travelling; saved times may differ on another day.")
+			Text(journey.source == "Google Maps" ? "Google Maps travel estimates may change. Check the operator for current arrivals." : "Timetable estimates, not live arrivals. Check service hours before travelling; saved times may differ on another day.")
 				.font(.caption).foregroundStyle(AppTheme.secondaryText)
 			if let note = journey.availability?.text,
 				let warning = note.range(of: "Warning:") {
@@ -62,21 +62,17 @@ struct JourneyTimetableFooter: View {
 	}
 }
 
-// Destination reserved for the next operator-API feature. Never present saved times as live ETAs.
 private struct OperatorArrivalsDestination: View {
-	let journey: Journey
-	var body: some View {
-		ScrollView {
-			VStack(alignment: .leading, spacing: 18) {
-				Label("Operator arrivals", systemImage: "clock.arrow.circlepath").font(.title2.bold())
-				Text("Live arrival checking will be connected here in a future step.")
-				Text("This screen does not fetch live estimates yet.")
-					.font(.footnote).foregroundStyle(AppTheme.secondaryText)
-				JourneyFlowView(journey: journey)
-			}.padding(20)
-		}
-		.background(AppTheme.background)
-		.navigationTitle("Arrival estimates")
-		.navigationBarTitleDisplayMode(.inline)
-	}
+    let journey: Journey
+    var body: some View {
+        List {
+            ForEach(Array(journey.displayLegs.enumerated()), id: \.offset) { _, leg in
+                if leg.transitLeg == true {
+                    NavigationLink { ArrivalsView(leg: leg) } label: {
+                        VStack(alignment: .leading) { Text(leg.lineName); Text(leg.from.name).font(.caption) }
+                    }
+                }
+            }
+        }.navigationTitle("Next arrivals")
+    }
 }

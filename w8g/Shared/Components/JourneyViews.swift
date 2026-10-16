@@ -300,9 +300,10 @@ struct RouteDetailContent: View {
                         JourneyLegTimeline(leg: item.value)
                     }
                 }
-                Text("The map follows server route geometry; rail segments can be schematic.").font(
+                if journey.source == "Google Maps" { GoogleRouteLink(journey: journey) }
+                else { Text("The map follows server route geometry; rail segments can be schematic.").font(
                     .caption
-                ).foregroundStyle(AppTheme.secondaryText)
+                ).foregroundStyle(AppTheme.secondaryText) }
                 if let source = journey.source {
                     Text(source).font(.caption).foregroundStyle(AppTheme.secondaryText)
                 }

@@ -11,7 +11,13 @@ import UIKit
 
 struct AIChatView: View {
     let accountID: String
-    @State private var model = AIChatModel()
+    let direct: Bool
+    @State private var model: AIChatModel
+    init(accountID: String, direct: Bool = false) {
+        self.accountID = accountID
+        self.direct = direct
+        _model = State(initialValue: AIChatModel(direct: direct))
+    }
     @State private var location = LocationService()
     @State private var settings = false
     @State private var confirmClear = false
@@ -77,7 +83,13 @@ struct AIChatView: View {
                 } else if model.canRetry {
                     Button("Reply stopped · Retry") { submit(retry: true) }.font(.footnote)
                 }
+                if !model.isSending, let query = model.proposal?.arrivalQuery, !query.isEmpty {
+                    NavigationLink { ArrivalsView(query: query) } label: {
+                        Label("Check next arrivals", systemImage: "clock.arrow.circlepath").padding(14)
+                    }
+                }
                 if !model.isSending && !model.stops.isEmpty {
+                    if direct { GoogleAttributionView(places: model.stops.compactMap(\.place)) }
                     VStack(alignment: .leading, spacing: 12) {
                     if model.planner.isWaiting || model.planner.canResume {
                         searchProgress
@@ -110,6 +122,10 @@ struct AIChatView: View {
                         .accessibilityLabel("Edit trip")
                         SaveJourneyButton(journey: journey, iconOnly: true)
                     }
+                    if direct {
+                        Text("Google Maps").font(.system(size: 14)).foregroundStyle(.secondary)
+                        GoogleRouteLink(journey: journey)
+                    } else {
                     SavedRoutePreview(
                         route: SavedRoute(ownerID: accountID, recordID: journey.id,
                             journey: journey, updated: 0, pending: .none),
@@ -122,6 +138,7 @@ struct AIChatView: View {
                     }
                     .accessibilityAddTraits(.isButton)
                     .accessibilityHint("Open journey details")
+                    }
                     Text("Tap a route to see journey details.")
                         .font(.caption).foregroundStyle(AppTheme.secondaryText)
                     ForEach(model.planner.routes) { route in
@@ -270,7 +287,7 @@ struct AIChatView: View {
         }
         .sheet(isPresented: $settings) {
             NavigationStack {
-                GeminiSettingsView(accountID: accountID)
+                ServicesSettingsView(accountID: accountID)
                     .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Done") { settings = false } } }
             }
         }
@@ -288,7 +305,7 @@ struct AIChatView: View {
             }.presentationDetents([.medium])
         }
         .sheet(item: $picker) { target in
-            AIPlacePicker(query: target.query) { place in
+            AIPlacePicker(query: target.query, direct: direct) { place in
                 if let slot = target.slot { model.choose(place, for: slot) }
                 if let field = target.field { (target.targetPlanner ?? model.planner).choose(place, for: field) }
             }

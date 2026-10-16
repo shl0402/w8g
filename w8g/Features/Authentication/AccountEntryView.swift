@@ -311,6 +311,17 @@ struct AccountEntryView: View {
 
 					Divider()
 
+					Button { session.enterGuest() } label: {
+						HStack(spacing: 14) {
+							Image(systemName: "globe").font(.title3)
+							VStack(alignment: .leading, spacing: 4) {
+								Text("Continue without an account").font(.subheadline.weight(.semibold))
+								Text("Online with your own API keys").font(.footnote).foregroundStyle(AppTheme.secondaryText)
+							}
+							Spacer()
+							Image(systemName: "chevron.right").font(.caption)
+						}.padding(16).background(AppTheme.ink.opacity(0.04), in: RoundedRectangle(cornerRadius: 16))
+					}.buttonStyle(.plain)
 					NavigationLink(value: AppDestination.offline) {
 						HStack(spacing: 14) {
 							Image(systemName: "bookmark")

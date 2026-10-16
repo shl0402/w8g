@@ -21,6 +21,7 @@ struct AIStopChoice: Identifiable, Codable {
 @Observable
 @MainActor
 final class AIChatModel {
+    let direct: Bool
     var input = "" { didSet { persist() } }
     private(set) var messages: [AIMessage] = [] { didSet { persist() } }
     private(set) var stops: [AIStopChoice] = [] { didSet { schedulePersist() } }
@@ -62,7 +63,7 @@ final class AIChatModel {
     func saveState() { persist() }
 
     func load(accountID: String) {
-        let key = "w8g.ai.chat." + accountID
+        let key = "w8g.ai.chat." + accountID + (direct ? ".direct" : "")
         guard storageKey != key else { return }
         storageKey = nil
         clear()
@@ -88,7 +89,7 @@ final class AIChatModel {
     }
 
     private func persist() {
-        guard let storageKey,
+        guard !direct, let storageKey,
               let data = try? JSONEncoder().encode(Transcript(messages: Array(messages.suffix(100)), draft: String(input.prefix(3000)), stops: stops, proposal: proposal, planner: planner.snapshot(), editor: routeEditor?.snapshot())) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
     }
@@ -104,8 +105,9 @@ final class AIChatModel {
         prepareReviewIfPossible()
     }
 
-    init(routeService: (any RouteServing)? = nil) {
-        planner = RoutePlannerModel(service: routeService ?? AIConfirmedRouteService())
+    init(routeService: (any RouteServing)? = nil, direct: Bool = false) {
+        self.direct = direct
+        planner = RoutePlannerModel(service: routeService ?? (direct ? GoogleRouteService() : AIConfirmedRouteService()))
         observePlanner(planner)
     }
 
@@ -208,9 +210,19 @@ final class AIChatModel {
                 }
             }
             do {
-                let reply = try await GeminiService().reply(to: text, history: history, key: key, options: options)
+                let reply = try await GeminiService().reply(to: text, history: history, key: key, options: options, direct: direct)
                 try Task.checkCancellation()
                 guard revision == version else { return }
+                if direct && reply.places.count + (reply.useCurrentLocation == true ? 1 : 0) > 2 {
+                    if let index = messages.firstIndex(where: { $0.id == messageID }) { messages[index].status = .sent }
+                    messages.append(AIMessage(isUser: false, text: "Multi-stop routing requires w8g server mode. Sign in to plan all stops, or ask for one starting point and one destination."))
+                    return
+                }
+                if direct && !Set(reply.modes).isSubset(of: ["mtr", "bus", "tram"]) && !reply.places.isEmpty {
+                    if let index = messages.firstIndex(where: { $0.id == messageID }) { messages[index].status = .sent }
+                    messages.append(AIMessage(isUser: false, text: "This mode offers MTR, bus, tram / Light Rail and walking preferences. Use server mode for the other transport filters."))
+                    return
+                }
                 proposal = reply
                 configureProposalSettings(reply)
                 stops = reply.places.map { AIStopChoice(name: $0.name, stayMinutes: $0.stayMinutes) }
@@ -221,7 +233,7 @@ final class AIChatModel {
                 var evidence: [AIPlaceSearchEvidence] = []
                 for (index, slot) in stops.enumerated() where !slot.isCurrentLocation {
                     do {
-                        let places = try await PlaceService().search(slot.name)
+                        let places = try await (direct ? GooglePlacesService().search(slot.name) : PlaceService().search(slot.name))
                         try Task.checkCancellation()
                         guard revision == version else { return }
                         let usable = Array(places.filter(\.isInHongKong).prefix(3))
@@ -270,7 +282,7 @@ final class AIChatModel {
                 searched.insert(request.index)
                 evidence[position].alternateQuery = query
                 do {
-                    let found = try await PlaceService().search(query)
+                    let found = try await (direct ? GooglePlacesService().search(query) : PlaceService().search(query))
                     try Task.checkCancellation()
                     guard revision == version else { return "" }
                     let candidates = Array(found.filter(\.isInHongKong).prefix(3))

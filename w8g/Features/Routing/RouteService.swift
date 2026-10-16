@@ -52,10 +52,14 @@ struct RoutingStatus: Decodable {
 
 @MainActor
 protocol RouteServing {
+    var usesDirectAPIs: Bool { get }
     func status() async throws -> RoutingStatus
     func start(_ request: RouteRequest) async throws -> String
     func job(_ id: String) async throws -> RouteJob
 }
+
+@MainActor
+extension RouteServing { var usesDirectAPIs: Bool { false } }
 
 @MainActor
 struct RouteService: RouteServing {

@@ -16,9 +16,8 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             NavigationStack {
-                ExploreView {
-                    showingProfile = true
-                }
+                if session.isGuest { DirectExploreView { showingProfile = true } }
+                else { ExploreView { showingProfile = true } }
             }
             .toolbarBackground(AppTheme.background, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
@@ -41,10 +40,8 @@ struct MainTabView: View {
             }
 
             NavigationStack {
-                if let account = session.account {
-                    AIChatView(accountID: account.id)
-                        .id(account.id)
-                }
+                AIChatView(accountID: session.account?.id ?? "guest", direct: session.isGuest)
+                    .id((session.account?.id ?? "guest") + (session.isGuest ? ".direct" : ".server"))
             }
             .toolbarBackground(AppTheme.background, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)

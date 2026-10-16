@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var savedRoutes = SavedRouteStore()
     @State private var offlineMaps = OfflineMapStore()
     @State private var signInPath = NavigationPath()
+    @State private var widgetRequest: WidgetOpenRequest?
     @State private var emailReturnMessage = ""
     @State private var showEmailReturnMessage = false
 
@@ -33,7 +34,7 @@ struct ContentView: View {
                             .frame(minHeight: 44)
                             .padding(.bottom, 24)
                     }
-            } else if session.account != nil {
+            } else if session.account != nil || session.isGuest {
                 MainTabView()
             } else {
                 NavigationStack(path: $signInPath) {
@@ -61,15 +62,27 @@ struct ContentView: View {
             let owner = session.account?.id
             savedRoutes.selectAccount(owner)
             if let owner {
+                _ = try? GeminiKeyStore.load(accountID: owner)
                 await savedRoutes.synchronise(owner: owner)
             }
         }
         .task { await session.restoreSession() }
         .tint(AppTheme.ink)
         .preferredColorScheme(.light)
+        .sheet(item: $widgetRequest) { request in
+            WidgetDestinationView(request: request)
+                .environment(session)
+                .environment(savedRoutes)
+                .environment(offlineMaps)
+        }
         .onOpenURL { url in
+            if url.scheme == "w8g", url.host == "widgets" {
+                widgetRequest = WidgetOpenRequest(url: url)
+                return
+            }
             if url.scheme == "w8g", url.host == "auth", url.path == "/reset" {
                 guard session.account == nil else { return }
+                session.leaveGuest()
                 if !session.isResetScreenVisible {
                     signInPath = NavigationPath([AccountScreen.resetPassword])
                 }
@@ -86,6 +99,7 @@ struct ContentView: View {
                 return
             }
 
+            session.leaveGuest()
             let parts = URLComponents(
                 url: url,
                 resolvingAgainstBaseURL: false

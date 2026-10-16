@@ -21,6 +21,11 @@ struct JourneyLegTimeline: View {
             TimelineRow(color: color, first: true, endpoint: true) {
                 VStack(alignment: .leading, spacing: 8) {
                     stopHeading(leg.from.name, time: leg.start?.scheduledTime)
+                    if leg.transitLeg == true {
+                        NavigationLink { ArrivalsView(leg: leg) } label: {
+                            Label("Next arrivals", systemImage: "clock.arrow.circlepath").font(.subheadline).frame(minHeight: 44)
+                        }
+                    }
                     Label(TransitAppearance.detailName(leg), systemImage: TransitAppearance.symbol(leg))
                         .font(.subheadline.weight(.semibold))
                     if !leg.isWalking, let headsign = leg.headsign, !headsign.isEmpty {

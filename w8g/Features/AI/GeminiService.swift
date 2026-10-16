@@ -28,6 +28,7 @@ struct AIProposal: Codable {
     let departure: String
     let modes: [String]
     let preference: String
+    var arrivalQuery: String? = nil
     var arrivalDeadline: String? = nil
     var timeAssumption: String? = nil
 
@@ -40,6 +41,7 @@ struct AIProposal: Codable {
             RoutePreference(rawValue: preference) != nil,
             departure.isEmpty || JourneyTime.parse(departure) != nil,
             (arrivalDeadline ?? "").isEmpty || JourneyTime.parse(arrivalDeadline) != nil,
+            (arrivalQuery ?? "").count <= 300,
             (timeAssumption ?? "").count <= 1000 else {
             throw APIError(message: "Gemini returned an invalid trip suggestion. Try rephrasing your request.")
         }
@@ -86,7 +88,8 @@ struct GeminiService {
         to text: String,
         history: [AIMessage],
         key: String,
-        options: GeminiOptions
+        options: GeminiOptions,
+        direct: Bool = false
     ) async throws -> AIProposal {
         guard !text.isEmpty, text.count <= 3000 else {
             throw APIError(message: "Enter a message of up to 3,000 characters.")
@@ -100,7 +103,9 @@ struct GeminiService {
         use Traditional Chinese for Chinese. You may suggest real Hong Kong destinations.
         Extract the COMPLETE ordered list of up to 10 places from the conversation, not just edits.
         Never invent coordinates, routes, fares, verified journey durations, opening hours or live arrivals.
-        Only departure-time routing is implemented. Live-arrival lookup and exact arrive-by routing are NOT available.
+        Only departure-time routing is implemented. Exact arrive-by routing is NOT available.
+        Live arrivals: for MTR, KMB/LWB or Citybus requests, set arrivalQuery to a concise English operator, line/route and station/stop description; places must be empty. The app opens an operator lookup. Never invent arrival times. Other operators are not connected; explain this in the reply.
+        Mode: \(direct ? "Direct APIs: only one-to-one routes. Available modes are mtr, bus, tram (including Light Rail), or an empty list for walking. Do not include ferry, funicular or light_rail as separate filters; explain when a requested filter cannot be supplied. Multi-stop routes and optimising stop order require server mode. For those requests explain this and return no places; invite signing in or a one-to-one request." : "w8g server: one-to-one and multi-stop available.")
         For any unsupported function, explain the limitation in your reply and offer a supported alternative.
         Include any estimate and its assumptions in your reply too; the route card only shows editable search parameters,
         not separate feature-limit explanations. Keep the reply concise and avoid repeating the same warning.
@@ -123,7 +128,7 @@ struct GeminiService {
         Respect an explicit starting place, including one established earlier in the conversation: set useCurrentLocation=false.
         For general questions or suggestions without a route request, useCurrentLocation=false.
         If the user asks to start here/current location, useCurrentLocation=true even if an older origin exists.
-        Use no places for unrelated questions or live-arrival questions; explain live arrivals are not connected.
+        Use no places for unrelated questions. Set arrivalQuery to an empty string unless an operator arrival lookup is requested.
         Preserve order unless optimisation was requested. Dates are Hong Kong time.
         Current Hong Kong date/time: \(JourneyTime.departure(Date())).
         departure must be an ISO8601 date-time with +08:00, or empty for leave now.
@@ -135,6 +140,7 @@ struct GeminiService {
         let schema: [String: Any] = [
             "type": "object",
             "properties": [
+                "arrivalQuery": ["type": "string"],
                 "reply": ["type": "string"],
                 "useCurrentLocation": ["type": "boolean"],
                 "places": ["type": "array", "maxItems": 10, "items": [
@@ -150,7 +156,7 @@ struct GeminiService {
                 "modes": ["type": "array", "items": ["type": "string", "enum": RouteTransport.allCases.map(\.rawValue)]],
                 "preference": ["type": "string", "enum": ["fastest", "walking", "transfers"]]
             ],
-            "required": ["reply", "useCurrentLocation", "places", "order", "departure", "modes", "preference", "arrivalDeadline", "timeAssumption"]
+            "required": ["arrivalQuery", "reply", "useCurrentLocation", "places", "order", "departure", "modes", "preference", "arrivalDeadline", "timeAssumption"]
         ]
         let context = history.suffix(8).map { message -> [String: Any] in
             ["role": message.isUser ? "user" : "model", "parts": [["text": String(message.text.prefix(3000))]]]
